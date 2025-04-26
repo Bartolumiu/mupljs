@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import loadFile from '../handlers/files.js';
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
@@ -27,8 +28,9 @@ const naturalSort = (files) => {
 }
 
 const attachImagesToChapters = async (chapters) => {
+    const { chapter_root } = await loadFile('config');
     for (const chapter of chapters) {
-        const folderPath = chapter.filePath;
+        const folderPath = path.join(chapter_root, chapter.chapterPath);
         let files;
 
         try {
@@ -49,10 +51,6 @@ const attachImagesToChapters = async (chapters) => {
 
         chapter.images = sortedImageFiles;
     }
-
-    // DEBUG: Update the parsed_chapters.json file with images (will be removed in final version)
-    await fs.writeFile(path.join(process.cwd(), 'parsed_chapters.json'), JSON.stringify(chapters, null, 2));
-    console.log(`\nDEBUG: Images attached to chapters and saved to parsed_chapters.json`);
 }
 
 export default attachImagesToChapters;
