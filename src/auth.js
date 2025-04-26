@@ -73,7 +73,11 @@ const interactiveLogin = async () => {
         res.end('Login successful! You can close this window.');
         server.close();
 
-        resolve(tokenRes.data); // { access_token, refresh_token, expires_in, ... }
+        console.log(tokenRes.data);
+        resolve({
+          ...tokenRes.data,
+          expires_at: Date.now() + (tokenRes.data.expires_in * 1000),
+        }); // { access_token, refresh_token, expires_in, ... }
       } catch (err) {
         res.writeHead(500);
         res.end('Token exchange failed. Check console for details.');
@@ -98,7 +102,10 @@ const refreshAccessToken = async (refreshToken) => {
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
-    return res.data; // { access_token, refresh_token, expires_in, ... }
+    return {
+      ...res.data,
+      expires_at: Date.now() + (res.data.expires_in * 1000),
+    }; // { access_token, refresh_token, expires_in, ... }
   } catch (err) {
     console.error('❌ Failed to refresh access token:', err.response?.data || err.message);
     throw new Error('Failed to refresh access token');
