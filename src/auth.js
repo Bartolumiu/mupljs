@@ -73,7 +73,6 @@ const interactiveLogin = async () => {
         res.end('Login successful! You can close this window.');
         server.close();
 
-        console.log(tokenRes.data);
         resolve({
           ...tokenRes.data,
           expires_at: Date.now() + (tokenRes.data.expires_in * 1000),
