@@ -124,8 +124,9 @@ const getChapters = async () => {
         console.log(`✅ Parsed: ${entry.name} -> ${JSON.stringify(chapterData)}`);
     }
 
+    // DEBUG: Save parsed chapters to a file (will be removed in final version)
     await fs.writeFile(path.join(process.cwd(), 'parsed_chapters.json'), JSON.stringify(parsedChapters, null, 2));
-    console.log(`\nParsed chapters saved to parsed_chapters.json`);
+    console.log(`\nDEBUG: Parsed chapters saved to parsed_chapters.json`);
     console.log(`Total chapters parsed: ${parsedChapters.length}`);
 
     return parsedChapters;
