@@ -1,3 +1,4 @@
 {
-    "chapterRoot": "chapters"
+    "mangadex_api": "https://api.mangadex.org",
+    "chapter_root": "chapters"
 }
