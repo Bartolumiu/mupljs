@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import loadFile from '../handlers/files.js';
 
 const SPECIAL_CHAR_MAP = {
     '{asterisk}': '*',
@@ -12,31 +13,6 @@ const SPECIAL_CHAR_MAP = {
     '{quote}': '"',
     '{pipe}': '|'
 };
-
-const loadFile = async (fileName) => {
-    switch (fileName) {
-        case 'config':
-            return await loadConfig();
-        case 'map':
-            return await loadMap();
-        default:
-            throw new Error(`Unknown file name: ${fileName}`);
-    }
-}
-
-const loadConfig = async () => {
-    const raw = await fs.readFile(path.join(process.cwd(), 'config.json'));
-    const config = JSON.parse(raw);
-    if (!config) throw new Error('Config file not found or invalid JSON format.');
-    return config;
-}
-
-const loadMap = async () => {
-    const raw = await fs.readFile(path.join(process.cwd(), 'name_id_map.json'));
-    const map = JSON.parse(raw);
-    if (!map) throw new Error('Map file not found or invalid JSON format.');
-    return map;
-}
 
 const restoreChapterName = (input) => {
     return Object.entries(SPECIAL_CHAR_MAP).reduce((str, [key, val]) => str.replaceAll(key, val), input);
@@ -69,15 +45,14 @@ const parseChapterName = (input) => {
 const isUUIDv4 = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
 
 const getChapters = async () => {
-    const { chapterRoot } = await loadFile('config');
+    const { chapter_root } = await loadFile('config');
     const nameIdMap = await loadFile('map');
 
-    const entries = await fs.readdir(chapterRoot, { withFileTypes: true });
+    const entries = await fs.readdir(chapter_root, { withFileTypes: true });
     const parsedChapters = [];
 
     for (const entry of entries) {
         const name = path.basename(entry.name, path.extname(entry.name));
-        const fullPath = path.join(chapterRoot, entry.name);
         const parsed = parseChapterName(name);
 
         if (!parsed) {
@@ -108,7 +83,7 @@ const getChapters = async () => {
         }
         if (invalidGroup) continue;
         const chapterData = {
-            filePath: fullPath,
+            chapterPath: name,
             titleId,
             lang: parsed.lang,
             chapter: parsed.chapter,
@@ -117,21 +92,14 @@ const getChapters = async () => {
             publishDate: parsed.publishDate,
             groups: groupIds,
             isOneshot: parsed.isOneshot,
-            images: []
+            images: [],
+            imageFiles: []
         };
 
         parsedChapters.push(chapterData);
         console.log(`✅ Parsed: ${entry.name} -> ${JSON.stringify(chapterData)}`);
     }
-
-    // DEBUG: Save parsed chapters to a file (will be removed in final version)
-    await fs.writeFile(path.join(process.cwd(), 'parsed_chapters.json'), JSON.stringify(parsedChapters, null, 2));
-    console.log(`\nDEBUG: Parsed chapters saved to parsed_chapters.json`);
-    console.log(`Total chapters parsed: ${parsedChapters.length}`);
-
     return parsedChapters;
 }
 
 export default getChapters;
-
-getChapters().catch(console.error);
