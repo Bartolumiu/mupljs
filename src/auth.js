@@ -4,7 +4,8 @@ import open from 'open';
 import { randomBytes, createHash } from 'crypto';
 import 'dotenv/config';
 
-function base64URLEncode(buf) {
+const CLIENT_ID = process.env.CLIENT_ID || 'mangadex-frontend-stable';
+const base64URLEncode = (buf) => {
   return buf
     .toString('base64')
     .replace(/\+/g, '-')
@@ -12,22 +13,21 @@ function base64URLEncode(buf) {
     .replace(/=+$/, '');
 }
 
-function sha256(buffer) {
+const sha256 = (buffer) => {
   return createHash('sha256').update(buffer).digest();
 }
 
-export async function interactiveLogin() {
-  const clientId = 'mangadex-frontend-stable';
+const interactiveLogin = async () => {
   const redirectUri = 'http://localhost:3000/auth/login?afterAuthentication=/&shouldRedirect=true&wasPopup=false';
 
   // Create PKCE codes
   const codeVerifier = base64URLEncode(randomBytes(32));
-  const codeChallenge = base64URLEncode(await sha256(codeVerifier));
+  const codeChallenge = base64URLEncode(sha256(codeVerifier));
   const state = base64URLEncode(randomBytes(16));
 
   // Build authorization URL
   const authUrl = `https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/auth?` + new URLSearchParams({
-    client_id: clientId,
+    client_id: CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email groups profile roles',
@@ -61,7 +61,7 @@ export async function interactiveLogin() {
           'https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/token',
           new URLSearchParams({
             grant_type: 'authorization_code',
-            client_id: clientId,
+            client_id: CLIENT_ID,
             code,
             redirect_uri: redirectUri,
             code_verifier: codeVerifier,
@@ -85,3 +85,24 @@ export async function interactiveLogin() {
     server.listen(3000);
   });
 }
+
+const refreshAccessToken = async (refreshToken) => {
+  try {
+    const res = await axios.post(
+      'https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/token',
+      new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: CLIENT_ID,
+        refresh_token: refreshToken,
+      }).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    return res.data; // { access_token, refresh_token, expires_in, ... }
+  } catch (err) {
+    console.error('❌ Failed to refresh access token:', err.response?.data || err.message);
+    throw new Error('Failed to refresh access token');
+  }
+}
+
+export { interactiveLogin, refreshAccessToken };
