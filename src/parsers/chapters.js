@@ -84,7 +84,7 @@ const getChapters = async () => {
         if (invalidGroup) continue;
         const chapterData = {
             chapterPath: name,
-            titleId,
+            titleId: titleIdValid,
             lang: parsed.lang,
             chapter: parsed.chapter,
             volume: parsed.volume,
